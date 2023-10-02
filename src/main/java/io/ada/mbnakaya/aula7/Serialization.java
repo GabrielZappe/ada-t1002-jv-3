@@ -1,26 +1,41 @@
 import java.io.*;
-import java.nio.file.Files;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
 public class Serialization {
 
     public static void main(String[] args) throws IOException, ClassNotFoundException {
 
         Path path = Path.of("src/main/resources/aula7/payment.txt");
-        if (!path.toFile().exists()) Files.createFile(path);
 
         // Objeto que será serializado e gravado em arquivo txt
         Payment payment = new Payment(1L, 0L, 10L, "BRL");
 
         // Serialização
-        try (ObjectOutputStream objectOutputStream = new ObjectOutputStream(new FileOutputStream("src/main/resources/aula7/payment.txt"))) {
+        try (FileChannel channel = FileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
             objectOutputStream.writeObject(payment);
+
+            ByteBuffer buffer = ByteBuffer.wrap(byteArrayOutputStream.toByteArray());
+            channel.write(buffer);
         } catch (NotSerializableException ex) {
             System.out.println("Objeto não serializável :(");
         }
 
         // Deserialização
-        try (ObjectInputStream objectInputStream = new ObjectInputStream(new FileInputStream("src/main/resources/aula7/payment.txt"))) {
+        try (FileChannel channel = FileChannel.open(path, StandardOpenOption.READ)) {
+            ByteBuffer buffer = ByteBuffer.allocate((int) channel.size());
+            channel.read(buffer);
+            buffer.flip();
+
+            byte[] data = new byte[buffer.remaining()];
+            buffer.get(data);
+
+            ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(data);
+            ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
             var object = objectInputStream.readObject();
             if (object instanceof Payment) {
                 Payment deserializedPayment = (Payment) object;
