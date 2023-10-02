@@ -1,69 +1,38 @@
-package io.ada.mbnakaya.aula7;
-
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 
 public class Serialization {
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, ClassNotFoundException {
 
         Path path = Path.of("src/main/resources/aula7/payment.txt");
         if (!path.toFile().exists()) Files.createFile(path);
 
-        // Serialização ==> converter um objeto em memória para uma stream de bytes
-
         // Objeto que será serializado e gravado em arquivo txt
         Payment payment = new Payment(1L, 0L, 10L, "BRL");
 
-        // Declarando de um FileOutputStream
-        OutputStream outputStream = new FileOutputStream("src/main/resources/aula7/payment.txt");
-
-        // Declarando um escritor em buffer (para otimizar o processo de escrita no arquivo)
-        BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(outputStream);
-
-        // Declarando um serializador de objetos
-        ObjectOutputStream objectOutputStream = new ObjectOutputStream(bufferedOutputStream);
-
-        try {
+        // Serialização
+        try (ObjectOutputStream objectOutputStream = new ObjectOutputStream(new FileOutputStream("src/main/resources/aula7/payment.txt"))) {
             objectOutputStream.writeObject(payment);
         } catch (NotSerializableException ex) {
             System.out.println("Objeto não serializável :(");
-        } finally {
-            objectOutputStream.close();
-            bufferedOutputStream.close();
-            outputStream.close();
         }
 
-        // Deserialização ==> converter uma stream de bytem em um objeto
-
-        // Declarando de um FileInputStream
-        InputStream inputStream = new FileInputStream("src/main/resources/aula7/payment.txt");
-
-        // Declarando um leitor em buffer (para otimizar o processo de leitura)
-        BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream);
-
-        // Declarando um serializador de objetos
-        ObjectInputStream objectInputStream = new ObjectInputStream(bufferedInputStream);
-
-        try {
+        // Deserialização
+        try (ObjectInputStream objectInputStream = new ObjectInputStream(new FileInputStream("src/main/resources/aula7/payment.txt"))) {
             var object = objectInputStream.readObject();
-            if (object instanceof Payment p) System.out.println(p);
+            if (object instanceof Payment) {
+                Payment deserializedPayment = (Payment) object;
+                System.out.println(deserializedPayment);
+            }
         } catch (NotSerializableException ex) {
             System.out.println("Objeto não serializável :(");
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        } finally {
-            objectOutputStream.close();
-            bufferedOutputStream.close();
-            outputStream.close();
         }
     }
 
-    static class Payment {
-//        @Serial
-//        private static final long serialVersionUID = 1L;
+    static class Payment implements Serializable {
+        private static final long serialVersionUID = 1L;
         private Long id;
         private Long discount;
         private Long total;
